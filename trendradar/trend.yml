@@ -1,0 +1,46 @@
+name: TrendRadar烂梗一次性溯源抓取
+on:
+  # 支持手动点击运行
+  workflow_dispatch:
+    inputs:
+      full_backtrack:
+        description: 开启2018-2026完整历史回溯（必勾选）
+        type: boolean
+        default: true
+  # 修改配置文件后自动执行一次抓取
+  push:
+    branches: [ main ]
+    paths:
+      - 'config/**'
+
+jobs:
+  crawl_task:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Shanghai
+    steps:
+      # 拉取仓库全部代码
+      - name: 拉取仓库代码
+        uses: actions/checkout@v4
+
+      # 安装Python依赖环境
+      - name: 安装Python依赖包
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 执行全量烂梗时序抓取
+      - name: 启动全网溯源抓取
+        run: |
+          python3 main.py
+        env:
+          FULL_BACKTRACK: ${{ github.event.inputs.full_backtrack }}
+
+      # 打包抓取结果，免费存90天下载，替代付费R2存储
+      - name: 上传溯源数据包
+        uses: actions/upload-artifact@v4
+        with:
+          name: 烂梗溯源完整数据包
+          path: output/
+          include-hidden-files: true
